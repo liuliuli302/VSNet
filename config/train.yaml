@@ -1,0 +1,32 @@
+# lightning.pytorch==2.3.2
+seed_everything: true
+trainer:
+  max_epochs: 1000
+  callbacks:
+    class_path: lightning.pytorch.callbacks.EarlyStopping
+    init_args:
+      monitor: 'train_loss'
+      patience: 20
+      mode: min
+model:
+  enc_vlayers: 3
+  enc_tlayers: 3
+  enc_vheads: 4
+  enc_theads: 4
+  enc_hidden: 128
+  enc_vdrop: 0.1
+  enc_tdrop: 0.1
+  v_dim: 1024
+  t_dim: 768
+  sum_layers: 3
+  sum_heads: 8
+  sum_hidden: 256
+  sum_drop: 0.2
+  sum_ratio: 0.15
+  trans_times: 3
+  lr: 0.0001
+data:
+  root: ./data_source/TVSum
+  split_id: 0
+  batch_size: 8
+  dataset_name: TVSum
