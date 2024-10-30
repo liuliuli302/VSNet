@@ -1,3 +1,4 @@
+import os
 import h5py
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -7,7 +8,9 @@ from torch.nn.utils.rnn import pad_sequence
 from lightning import LightningDataModule
 import yaml
 import torch.nn as nn
-from eval.eval_method import get_keyshot_summ
+from eval.vsumm_helper import get_keyshot_summ
+import sys
+print(sys.path)
 
 
 class VideoSumDataset(Dataset):
@@ -149,8 +152,10 @@ class VSDataModule(LightningDataModule):
 
 if __name__ == '__main__':
 
+    root = os.path.expandvars("$HOME/datasets/SumMe")
+
     datamodule = VSDataModule(
-        root='../data_source/SumMe',
+        root=root,
         split_id=1,
         batch_size=4,
         dataset_name='SumMe'
@@ -158,7 +163,7 @@ if __name__ == '__main__':
     data_loader = datamodule.train_dataloader()
 
     for batch in data_loader:
-        video_fea, text_fea, gt_score, gt_summary, mask = batch
+        video_fea, text_fea, gt_score, gt_summary, mask, change_points, n_frames, n_frame_per_seg, picks, user_summary, target = batch
         mask = mask.bool()
         gt_score_unmasked = torch.masked_select(gt_score, mask)
         fake_score = torch.zeros_like(gt_score_unmasked)
@@ -167,4 +172,4 @@ if __name__ == '__main__':
         loss = nn.CrossEntropyLoss()
 
         loss_itm = loss(gt_score_unmasked, fake_score)
-        print(batch.shape)
+

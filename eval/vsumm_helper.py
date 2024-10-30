@@ -1,9 +1,9 @@
 from typing import Iterable, List
-
 import numpy as np
 from ortools.algorithms.pywrapknapsack_solver import KnapsackSolver
-
 import pdb
+import torch
+
 
 def f1_score(pred: np.ndarray, test: np.ndarray) -> float:
     """Compute F1-score on binary classification task.
@@ -134,6 +134,7 @@ def bbox2summary(seq_len: int,
     pred_summ = pred_summ_upsampled[::15]
     return pred_summ, pred_summ_upsampled, pred_score, pred_score_upsampled
 
+
 def score2summary(pred_score: np.ndarray,
                  change_points: np.ndarray,
                  n_frames: int,
@@ -145,6 +146,7 @@ def score2summary(pred_score: np.ndarray,
     """Convert predicted score to summary"""
     pred_summ, pred_score_upsampled = get_keyshot_summ(pred_score, change_points, n_frames, nfps, picks, proportion=proportion, seg_score_mode=seg_score_mode)
     return pred_summ, pred_score_upsampled
+
 
 def get_summ_diversity(pred_summ: np.ndarray,
                        features: np.ndarray
@@ -200,3 +202,13 @@ def get_summ_f1score(pred_summ: np.ndarray,
         raise ValueError(f'Invalid eval metric {eval_metric}')
 
     return float(final_f1)
+
+
+if __name__ == "__main__":
+    fake_pred = torch.randint(low=0,high=2,size=(3192,))
+    fake_test = torch.randint(low=0,high=2,size=(8,3192))
+
+    f1 = get_summ_f1score(fake_pred, fake_test)
+
+    print(f1)
+

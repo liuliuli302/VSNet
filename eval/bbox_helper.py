@@ -1,7 +1,6 @@
 from itertools import groupby
 from operator import itemgetter
 from typing import Tuple
-
 import numpy as np
 
 
@@ -116,6 +115,7 @@ def nms(scores: np.ndarray,
     keep_scores = np.asarray(keep_scores, dtype=scores.dtype)
 
     return keep_scores, keep_bboxes
+
 
 def get_loc_label(target: np.ndarray) -> np.ndarray:
     """Generate location offset label from ground truth summary.
