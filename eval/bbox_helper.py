@@ -33,7 +33,7 @@ def cw2lr(bbox_cw: np.ndarray) -> np.ndarray:
 def seq2bbox(sequence: np.ndarray) -> np.ndarray:
     """Generate CW bbox from binary sequence mask"""
     sequence = np.asarray(sequence, dtype=bool)
-    selected_indices, = np.where(sequence == 1)
+    (selected_indices,) = np.where(sequence == 1)
 
     bboxes_lr = []
     for k, g in groupby(enumerate(selected_indices), lambda x: x[0] - x[1]):
@@ -76,9 +76,9 @@ def iou_cw(anchor_bbox: np.ndarray, target_bbox: np.ndarray) -> np.ndarray:
     return iou_lr(anchor_bbox_lr, target_bbox_lr)
 
 
-def nms(scores: np.ndarray,
-        bboxes: np.ndarray,
-        thresh: float) -> Tuple[np.ndarray, np.ndarray]:
+def nms(
+    scores: np.ndarray, bboxes: np.ndarray, thresh: float
+) -> Tuple[np.ndarray, np.ndarray]:
     """Non-Maximum Suppression (NMS) algorithm on 1D bbox.
 
     :param scores: List of confidence scores for bboxes. Sized [N].
@@ -107,7 +107,7 @@ def nms(scores: np.ndarray,
 
         iou = iou_lr(bboxes_remain, np.expand_dims(bbox, axis=0))
 
-        keep_indices = (iou < thresh)
+        keep_indices = iou < thresh
         bboxes_remain = bboxes_remain[keep_indices]
         scores_remain = scores_remain[keep_indices]
 
@@ -123,7 +123,7 @@ def get_loc_label(target: np.ndarray) -> np.ndarray:
     :param target: Ground truth summary. Sized [N].
     :return: Location offset label in LR format. Sized [N, 2].
     """
-    seq_len, = target.shape
+    (seq_len,) = target.shape
 
     bboxes = seq2bbox(target)
     offsets = bbox2offset(bboxes, seq_len)
@@ -131,10 +131,9 @@ def get_loc_label(target: np.ndarray) -> np.ndarray:
     return offsets
 
 
-def get_ctr_label(target: np.ndarray,
-                  offset: np.ndarray,
-                  eps: float = 1e-8
-                  ) -> np.ndarray:
+def get_ctr_label(
+    target: np.ndarray, offset: np.ndarray, eps: float = 1e-8
+) -> np.ndarray:
     """Generate centerness label for ground truth summary.
 
     :param target: Ground truth summary. Sized [N].
@@ -147,7 +146,8 @@ def get_ctr_label(target: np.ndarray,
 
     offset_left, offset_right = offset[target, 0], offset[target, 1]
     ctr_label[target] = np.minimum(offset_left, offset_right) / (
-        np.maximum(offset_left, offset_right) + eps)
+        np.maximum(offset_left, offset_right) + eps
+    )
 
     return ctr_label
 
@@ -175,11 +175,11 @@ def offset2bbox(offsets: np.ndarray) -> np.ndarray:
     :param offsets: LR offsets. Sized [B, N, 2].
     :return: Bounding boxes corresponding to offsets. Sized [B, N, 2].
     """
-    offset_left, offset_right = offsets[:, :, 0], offsets[:, :, 1] #[B, N]
+    offset_left, offset_right = offsets[:, :, 0], offsets[:, :, 1]  # [B, N]
     B, seq_len, _ = offsets.shape
     indices = np.arange(seq_len).reshape(1, seq_len)
-    indices = np.repeat(indices, B, axis=0) #[B, N]
-    bbox_left = indices - offset_left #[B, N]
-    bbox_right = indices + offset_right + 1 #[B, N]
-    bboxes = np.stack((bbox_left, bbox_right), axis=-1) #[B, N, 2]
+    indices = np.repeat(indices, B, axis=0)  # [B, N]
+    bbox_left = indices - offset_left  # [B, N]
+    bbox_right = indices + offset_right + 1  # [B, N]
+    bboxes = np.stack((bbox_left, bbox_right), axis=-1)  # [B, N, 2]
     return bboxes

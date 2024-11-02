@@ -24,10 +24,7 @@ def f1_score(pred: np.ndarray, test: np.ndarray) -> float:
     return float(f1)
 
 
-def knapsack(values: Iterable[int],
-             weights: Iterable[int],
-             capacity: int
-             ) -> List[int]:
+def knapsack(values: Iterable[int], weights: Iterable[int], capacity: int) -> List[int]:
     """Solve 0/1 knapsack problem using dynamic programming.
 
     :param values: Values of each items. Sized [N].
@@ -36,7 +33,7 @@ def knapsack(values: Iterable[int],
     :return: List of packed item indices.
     """
     knapsack_solver = KnapsackSolver(
-        KnapsackSolver.KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER, 'test'
+        KnapsackSolver.KNAPSACK_DYNAMIC_PROGRAMMING_SOLVER, "test"
     )
 
     values = list(values)
@@ -45,30 +42,32 @@ def knapsack(values: Iterable[int],
 
     knapsack_solver.Init(values, [weights], [capacity])
     knapsack_solver.Solve()
-    packed_items = [x for x in range(0, len(weights))
-                    if knapsack_solver.BestSolutionContains(x)]
+    packed_items = [
+        x for x in range(0, len(weights)) if knapsack_solver.BestSolutionContains(x)
+    ]
 
     return packed_items
 
 
 def downsample_summ(summ: np.ndarray, dataset) -> np.ndarray:
     """Down-sample the summary by 15 times"""
-    if dataset == 'behance':
+    if dataset == "behance":
         return summ
-    elif dataset in ['tvsum', 'summe']:
+    elif dataset in ["tvsum", "summe"]:
         return summ[::15]
     else:
         raise NotImplementedError
 
 
-def get_keyshot_summ(pred: np.ndarray,
-                     cps: np.ndarray,
-                     n_frames: int,
-                     nfps: np.ndarray,
-                     picks: np.ndarray,
-                     proportion: float = 0.15,
-                     seg_score_mode: str = 'mean',
-                     ) -> np.ndarray:
+def get_keyshot_summ(
+    pred: np.ndarray,
+    cps: np.ndarray,
+    n_frames: int,
+    nfps: np.ndarray,
+    picks: np.ndarray,
+    proportion: float = 0.15,
+    seg_score_mode: str = "mean",
+) -> np.ndarray:
     """Generate keyshot-based video summary i.e. a binary vector.
 
     :param pred: Predicted importance scores.
@@ -92,10 +91,10 @@ def get_keyshot_summ(pred: np.ndarray,
     # Assign scores to video shots as the average of the frames.
     seg_scores = np.zeros(len(cps), dtype=np.int32)
     for seg_idx, (first, last) in enumerate(cps):
-        scores = frame_scores[first:last + 1]
-        if seg_score_mode == 'mean':
+        scores = frame_scores[first : last + 1]
+        if seg_score_mode == "mean":
             seg_scores[seg_idx] = int(1000 * scores.mean())
-        elif seg_score_mode == 'sum':
+        elif seg_score_mode == "sum":
             seg_scores[seg_idx] = int(1000 * scores.sum())
 
     # Apply knapsack algorithm to find the best shots
@@ -108,49 +107,65 @@ def get_keyshot_summ(pred: np.ndarray,
     summary = np.zeros(n_frames, dtype=bool)
     for seg_idx in packed:
         first, last = cps[seg_idx]
-        summary[first:last + 1] = True
+        summary[first : last + 1] = True
 
     # pdb.set_trace()
     return summary, frame_scores
 
 
-def bbox2summary(seq_len: int,
-                 pred_cls: np.ndarray,
-                 pred_bboxes: np.ndarray,
-                 change_points: np.ndarray,
-                 n_frames: int,
-                 nfps: np.ndarray,
-                 picks: np.ndarray,
-                 proportion: float = 0.15,
-                 seg_score_mode: str = 'mean',
-                 ) -> np.ndarray:
+def bbox2summary(
+    seq_len: int,
+    pred_cls: np.ndarray,
+    pred_bboxes: np.ndarray,
+    change_points: np.ndarray,
+    n_frames: int,
+    nfps: np.ndarray,
+    picks: np.ndarray,
+    proportion: float = 0.15,
+    seg_score_mode: str = "mean",
+) -> np.ndarray:
     """Convert predicted bounding boxes to summary"""
     pred_score = np.zeros(seq_len, dtype=np.float32)
     for bbox_idx in range(len(pred_bboxes)):
         lo, hi = pred_bboxes[bbox_idx, 0], pred_bboxes[bbox_idx, 1]
         pred_score[lo:hi] = np.maximum(pred_score[lo:hi], [pred_cls[bbox_idx]])
 
-    pred_summ_upsampled, pred_score_upsampled = get_keyshot_summ(pred_score, change_points, n_frames, nfps, picks, proportion=proportion, seg_score_mode=seg_score_mode)
+    pred_summ_upsampled, pred_score_upsampled = get_keyshot_summ(
+        pred_score,
+        change_points,
+        n_frames,
+        nfps,
+        picks,
+        proportion=proportion,
+        seg_score_mode=seg_score_mode,
+    )
     pred_summ = pred_summ_upsampled[::15]
     return pred_summ, pred_summ_upsampled, pred_score, pred_score_upsampled
 
 
-def score2summary(pred_score: np.ndarray,
-                 change_points: np.ndarray,
-                 n_frames: int,
-                 nfps: np.ndarray,
-                 picks: np.ndarray,
-                 proportion: float = 0.15,
-                 seg_score_mode: str = 'mean',
-                 ) -> np.ndarray:
+def score2summary(
+    pred_score: np.ndarray,
+    change_points: np.ndarray,
+    n_frames: int,
+    nfps: np.ndarray,
+    picks: np.ndarray,
+    proportion: float = 0.15,
+    seg_score_mode: str = "mean",
+) -> np.ndarray:
     """Convert predicted score to summary"""
-    pred_summ, pred_score_upsampled = get_keyshot_summ(pred_score, change_points, n_frames, nfps, picks, proportion=proportion, seg_score_mode=seg_score_mode)
+    pred_summ, pred_score_upsampled = get_keyshot_summ(
+        pred_score,
+        change_points,
+        n_frames,
+        nfps,
+        picks,
+        proportion=proportion,
+        seg_score_mode=seg_score_mode,
+    )
     return pred_summ, pred_score_upsampled
 
 
-def get_summ_diversity(pred_summ: np.ndarray,
-                       features: np.ndarray
-                       ) -> float:
+def get_summ_diversity(pred_summ: np.ndarray, features: np.ndarray) -> float:
     """Evaluate diversity of the generated summary.
 
     :param pred_summ: Predicted down-sampled summary. Sized [N, F].
@@ -172,10 +187,9 @@ def get_summ_diversity(pred_summ: np.ndarray,
     return diversity
 
 
-def get_summ_f1score(pred_summ: np.ndarray,
-                     test_summ: np.ndarray,
-                     eval_metric: str = 'avg'
-                     ) -> float:
+def get_summ_f1score(
+    pred_summ: np.ndarray, test_summ: np.ndarray, eval_metric: str = "avg"
+) -> float:
     """Compare predicted summary with ground truth summary (keyshot-based).
 
     :param pred_summ: Predicted binary label of N frames. Sized [N].
@@ -194,21 +208,20 @@ def get_summ_f1score(pred_summ: np.ndarray,
 
     f1s = [f1_score(user_summ, pred_summ) for user_summ in test_summ]
 
-    if eval_metric == 'avg':
+    if eval_metric == "avg":
         final_f1 = np.mean(f1s)
-    elif eval_metric == 'max':
+    elif eval_metric == "max":
         final_f1 = np.max(f1s)
     else:
-        raise ValueError(f'Invalid eval metric {eval_metric}')
+        raise ValueError(f"Invalid eval metric {eval_metric}")
 
     return float(final_f1)
 
 
 if __name__ == "__main__":
-    fake_pred = torch.randint(low=0,high=2,size=(3192,))
-    fake_test = torch.randint(low=0,high=2,size=(8,3192))
+    fake_pred = torch.randint(low=0, high=2, size=(3192,))
+    fake_test = torch.randint(low=0, high=2, size=(8, 3192))
 
     f1 = get_summ_f1score(fake_pred, fake_test)
 
     print(f1)
-
