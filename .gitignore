@@ -11,3 +11,4 @@ lightning_logs/
 # Ingore the Dataset
 data/
 wandb/
+scores/

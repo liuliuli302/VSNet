@@ -14,14 +14,58 @@
 % date:        05-16-2014
 """
 import os
+from pathlib import Path
 from summe import *
 import numpy as np
 import random
+import json
 
-""" PATHS """
 
-HOMEDATA = os.path.expandvars("/mnt/e/dataset/SumMe/SumMe/GT")
+def raw_json_to_array(json_file):
+    # 读取 JSON 文件
+    with open(json_file, "r") as f:
+        data = json.load(f)
+
+    # 获取最大下标
+    max_index = max(int(key) for key in data.keys())
+
+    # 创建一个数组，初始值为 0
+    result_array = [0] * (max_index + 1)
+
+    # 填充数组
+    for key, value in data.items():
+        result_array[int(key)] = value
+
+    return np.array(result_array)
+
+
+def refine_json_to_array(json_file):
+    # 读取 JSON 文件
+    with open(json_file, 'r') as f:
+        data = json.load(f)
+
+    # 计算最终数组的长度
+    max_outer_index = max(int(key) for key in data.keys())
+    max_inner_index = 9  # 假设内层索引是 0 到 9
+    result_length = max_outer_index + 10  # 每个外层索引填充16个位置
+    
+    # 创建结果数组，初始值为 0
+    result_array = [0] * result_length
+
+    # 填充数组
+    for outer_key, inner_dict in data.items():
+        outer_index = int(outer_key)
+        for inner_key, value in inner_dict.items():
+            inner_index = int(inner_key)
+            position = outer_index + inner_index
+            result_array[position] = value
+
+    return np.array(result_array)
+
+
+HOMEDATA = "/mnt/e/dataset/SumMe/SumMe/GT"
 HOMEVIDEOS = "/mnt/e/dataset/SumMe/SumMe/videos/"
+
 
 if __name__ == "__main__":
     # Take a random video and create a random summary for it
@@ -55,29 +99,37 @@ if __name__ == "__main__":
     )
 
     # ==============================
-    gt_summary = gt_data.get("gt_score")
-    gt_summary = np.array(gt_summary).squeeze() * 10 + np.random.random(size=n_frames)
+
+    
+    
+    path = Path(
+        f"/home/insight/workspace/VSNet/scores/SumMe/refine/{videoName.replace(' ', '_')}.json"
+    )
+    summary = refine_json_to_array(path)
+    summary = summary * 20
+
+    # gt_summary = gt_data.get("gt_score")
+    # gt_summary = np.array(gt_summary).squeeze() * 10 + np.random.random(size=n_frames)
     # gt_max = np.max(gt_summary)
     # gt_min = np.min(gt_summary)
     # gt_summary = (gt_summary - gt_min) / (gt_max - gt_min)
-    gt_summary = list(
+    a = np.percentile(summary, 85)
+    summary = list(
         map(
-            lambda q: (round(q) if (q >= np.percentile(gt_summary, 85)) else 0),
-            gt_summary,
+            lambda q: (round(q) if (q >= np.percentile(summary, 85)) else 0),
+            summary,
         )
     )
-    [gt_measure, s_len] = evaluateSummary(
-        gt_summary, videoName, HOMEDATA
-    )
+    [gt_measure, s_len] = evaluateSummary(summary, videoName, HOMEDATA)
     # ==============================
 
     """Evaluate"""
     # get f-measure at 15% summary length
-    [f_measure, summary_length] = evaluateSummary(
-        summary_selections[0], videoName, HOMEDATA
-    )
-    print(f"F-measure :{f_measure} at length {summary_length} at Video {videoName}")
+    # [f_measure, summary_length] = evaluateSummary(
+    #     summary_selections[0], videoName, HOMEDATA
+    # )
+    # print(f"F-measure :{f_measure} at length {summary_length} at Video {videoName}")
 
-    """plotting"""
-    methodNames = {"Random"}
-    plotAllResults(summary_selections, methodNames, videoName, HOMEDATA)
+    # """plotting"""
+    # methodNames = {"Random"}
+    # plotAllResults(summary_selections, methodNames, videoName, HOMEDATA)
